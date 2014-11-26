@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset='UTF-8' />
+	<title>Biodiversity DQ Profile Visualization</title>
+
+	<!-- DQ Profile Content -->
+	<script src="https://dq-profile-allankv.c9.io/JS-Repository/Content-1.js"></script>
+	
+	<!-- Chart -->
+	<script src="http://www.chartjs.org/assets/Chart.min.js"></script>
+
+	<!-- Add jQuery -->
+	<script src="http://visualizer.json2html.com/js/jquery/js/jquery-1.7.2.min.js"></script>
+	<!-- Add JSON2HTML -->
+	<script src='http://visualizer.json2html.com/js/json2html.js' type='text/javascript'></script>
+	<script src='http://visualizer.json2html.com/js/jquery.json2html.js' type='text/javascript'></script>
+    <!-- Le styles -->
+    <link href="http://visualizer.json2html.com/js/bootstrap/css/bootstrap.css" rel="stylesheet">
+    <link href="http://visualizer.json2html.com/js/bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+	<link href="http://visualizer.json2html.com/js/google-code-prettify/prettify.css" rel="stylesheet">
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="http://visualizer.json2html.com/js/bootstrap/js/bootstrap.min.js"></script>
+	<link href='http://visualizer.json2html.com/css/layout.css' media='all' type='text/css' rel='stylesheet'/>
+	<style>
+		#page {min-height:600px;}
+		.package {margin-left:10px;padding:3px;border-radius:2px;margin-top:2px;}
+		.header {cursor:pointer;}
+
+		.name {color:gray;}
+
+		.array {background-color:#E7F1FE;border:thin solid #7DA2CE;}
+		.object {background-color:#E7F1FE;border:thin solid #7DA2CE;}
+		.string {color:red;}
+		.number {color:blue;}
+		.function {color:green;}
+
+		.open .children {display:block;}
+		.closed .children {display:none;}
+
+		.arrow {background-image:url("http://visualizer.json2html.com/img/d.png"); background-repeat:no-repeat; background-color:transparent; height:15px; width:15px; display:inline-block;}
+
+		.open .arrow {background-position:-20px 0;}
+		.closed .arrow {background-position:0 0;}
+
+		.type {color:gray;font-size:8pt;float:right;}
+
+		.hide {display:none;}
+
+		#main {width:100%;height:500px;overflow-y:scroll;}
+	</style>
+</head>
+	<section id='page'>
+		<header id='page-header'>
+			<a href='index.html'><img id='logo-header' src='http://visualizer.json2html.com/img/json-visualizer.png'/></a>
+		</header>
+		<article>
+			<div class='well'>
+				<h2>Visualize JSON Objects in Readable Format</h2>
+				<p>Easy visualization of JSON objects into semantically meaningful HTML<p>
+                <i>Use a <a href='http://www.chartjs.org/docs/#radar-chart'>RADAR CHART</a> to visualize NUMERICAL MEASUREMENTS of the DATASET</i>
+			</div>
+			<canvas id="myChart" width="700" height="400"></canvas>
+			<div style=";margin-top:20px;">
+				<div class='divider' style='margin-top:40px;'></div>
+				<div id='top'></div>
+			</div>
+		</article>
+		<div class='well'>
+			<div style='margin-left:30px'></div>
+		</div>
+	</section>
+</body>
+
+<script type='text/javascript'>
+	//three types of objects
+	//	array
+	//  object
+	//  function
+
+  	var json2 = getCurrentContent();
+	var transforms = {
+		'object':{'tag':'div','class':'package ${show} ${type}','children':[
+			{'tag':'div','class':'header','children':[
+				{'tag':'div','class':function(obj){
+					if( getValue(obj.value) !== undefined ) return('arrow hide');
+					else return('arrow');
+				}},
+				{'tag':'span','class':'name','html':'${name}'},
+				{'tag':'span','class':'value','html':function(obj) {
+					var value = getValue(obj.value);
+					if( value !== undefined ) return(" : " + value);
+					else return('');
+				}},
+				{'tag':'span','class':'type','html':'${type}'}
+			]},
+			{'tag':'div','class':'children','children':function(obj){return(children(obj.value));}}
+		]}
+	};
+	var dataChart = {
+    labels: ["Coordinates completeness", "Coordinates numerical precision", "Geographic coverage (1 degree)", "Geographic coverage (0.5 degree)", "Geographic coverage (0.1 degree)"],
+    datasets: [
+        {
+            label: "Recommmended DQ Measurements for Distribution Modeling Purposes",
+            fillColor: "rgba(220,220,220,0.2)",
+            strokeColor: "rgba(220,220,220,1)",
+            pointColor: "rgba(220,220,220,1)",
+            pointStrokeColor: "#fff",
+            pointHighlightFill: "#fff",
+            pointHighlightStroke: "rgba(220,220,220,1)",
+            data: [100, 60, 80, 70, 60]
+        },
+        {
+            label: "Dataset DQ Measurements",
+            fillColor: "rgba(151,187,205,0.2)",
+            strokeColor: "rgba(151,187,205,1)",
+            pointColor: "rgba(151,187,205,1)",
+            pointStrokeColor: "#fff",
+            pointHighlightFill: "#fff",
+            pointHighlightStroke: "rgba(151,187,205,1)",
+            data: [73, 59, 70, 51, 30]
+        }
+    ]
+};
+
+	$(function(){
+		ProfileInstance();
+		$('#inputJSON').val(JSON.stringify(json2));
+		//Visualize sample
+		visualize(json2);
+		
+		var ctx = document.getElementById("myChart").getContext("2d");
+		var myRadarChart = new Chart(ctx).Radar(dataChart, {tooltipTemplate: "<%if (label){%><%=label%>: <%}%><%= value %>",
+			multiTooltipTemplate: "<%= value %>%"
+		});
+		
+	});
+
+	function visualize(json) {
+		$('#top').html('');
+		$('#top').json2html(convert('json',json,'open'),transforms.object);
+		regEvents();
+	}
+	
+	function getValue(obj) {
+		var type = $.type(obj);
+		//Determine if this object has children
+		switch(type) {
+			case 'array':
+			case 'object':
+				return(undefined);
+			break;
+			case 'function':
+				//none
+				return('function');
+			break;
+			case 'string':
+				return("'" + obj + "'");
+			break;
+			default:
+				return(obj);
+			break;
+		}
+	}
+	
+	//Transform the children
+	function children(obj){
+		var type = $.type(obj);
+		//Determine if this object has children
+		switch(type) {
+			case 'array':
+			case 'object':
+				return(json2html.transform(obj,transforms.object));
+			break;
+			default:
+				//This must be a litteral
+			break;
+		}
+	}
+	
+	function convert(name,obj,show) {
+		var type = $.type(obj);
+		if(show === undefined) show = 'closed';
+		var children = [];
+		//Determine the type of this object
+		switch(type) {
+			case 'array':
+				//Transform array
+				//Itterrate through the array and add it to the elements array
+				var len=obj.length;
+				for(var j=0;j<len;++j){
+					//Concat the return elements from this objects tranformation
+					children[j] = convert(j,obj[j]);
+				}
+			break;
+			case 'object':
+				//Transform Object
+				var j = 0;
+				for(var prop in obj) {
+					children[j] = convert(prop,obj[prop]);
+					j++;
+				}
+			break;
+			default:
+				//This must be a litteral (or function)
+				children = obj;
+			break;
+		}
+		return( {'name':name,'value':children,'type':type,'show':show} );
+	}
+
+	function regEvents() {
+		$('.header').click(function(){
+			var parent = $(this).parent();
+			if(parent.hasClass('closed')) {
+				parent.removeClass('closed');
+				parent.addClass('open');
+			} else {
+				parent.removeClass('open');
+				parent.addClass('closed');
+			}
+		});
+	}
+
+</script>
+</html>
